@@ -20,8 +20,8 @@ import org.supercsv.prefs.CsvPreference;
  */
 public class BulkLoad
 {
-//    private static final String INPUT_FILE = "/Users/jpjcjbr/Downloads/201510_BolsaFamiliaFolhaPagamento.csv";
-    private static final String INPUT_FILE = "src/main/resources/teste.csv";
+    private static final String INPUT_FILE = "/Users/jpjcjbr/Downloads/201510_BolsaFamiliaFolhaPagamento.csv";
+//    private static final String INPUT_FILE = "src/main/resources/teste.csv";
 
     /** Default output directory */
     public static final String DEFAULT_OUTPUT_DIR = "data";

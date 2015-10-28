@@ -8,7 +8,7 @@ import org.apache.spark.api.java.function.Function;
 import com.datastax.spark.connector.japi.CassandraJavaUtil;
 import com.datastax.spark.connector.japi.CassandraRow;
 
-public class SummarizationPOC {
+public class FillEmptyFields {
 
 	public static <T> void main(final String[] args) {
 		final SparkConf conf = new SparkConf(true);

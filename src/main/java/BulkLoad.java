@@ -18,94 +18,86 @@ import org.supercsv.prefs.CsvPreference;
 /**
  * Usage: java bulkload.BulkLoad
  */
-public class BulkLoad
-{
-    private static final String INPUT_FILE = "/Users/jpjcjbr/Downloads/201510_BolsaFamiliaFolhaPagamento.csv";
-//    private static final String INPUT_FILE = "src/main/resources/teste.csv";
+public class BulkLoad {
+	private static final String INPUT_FILE = "/Users/jpjcjbr/Downloads/201510_BolsaFamiliaFolhaPagamento.csv";
 
-    /** Default output directory */
-    public static final String DEFAULT_OUTPUT_DIR = "data";
+	/** Default output directory */
+	public static final String DEFAULT_OUTPUT_DIR = "data";
 
-    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+	public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 
-    /** Keyspace name */
-    public static final String KEYSPACE = "dados";
-    /** Table name */
-    public static final String TABLE = "bolsa_familia";
+	/** Keyspace name */
+	public static final String KEYSPACE = "dados";
 
-    /**
-     * Schema for bulk loading table.
-     * It is important not to forget adding keyspace name before table name,
-     * otherwise CQLSSTableWriter throws exception.
-     */
-    public static final String SCHEMA = String.format("CREATE TABLE IF NOT EXISTS %s.%s (UF text, CITY text, RECEIVER text, VALUE decimal, MONTH text, PRIMARY KEY ((MONTH, UF, CITY), RECEIVER))", KEYSPACE, TABLE);
+	/** Table name */
+	public static final String TABLE = "bolsa_familia";
 
-    /**
-     * INSERT statement to bulk load.
-     * It is like prepared statement. You fill in place holder for each data.
-     */
-    
-    public static final String INSERT_STMT = String.format("INSERT INTO %s.%s (month, uf, city, receiver, value) VALUES (?, ?, ?, ?, ?)", KEYSPACE, TABLE);
+	/**
+	 * Schema for bulk loading table. It is important not to forget adding
+	 * keyspace name before table name, otherwise CQLSSTableWriter throws
+	 * exception.
+	 */
+	public static final String SCHEMA = String.format(
+			"CREATE TABLE IF NOT EXISTS %s.%s (UF text, CITY text, RECEIVER text, VALUE decimal, MONTH text, PRIMARY KEY ((MONTH, UF, CITY), RECEIVER))",
+			KEYSPACE, TABLE);
 
-    public static void main(String[] args)
-    {
-        // magic!
-        Config.setClientMode(true);
+	/**
+	 * INSERT statement to bulk load. It is like prepared statement. You fill in
+	 * place holder for each data.
+	 */
+	public static final String INSERT_STMT = String
+			.format("INSERT INTO %s.%s (month, uf, city, receiver, value) VALUES (?, ?, ?, ?, ?)", KEYSPACE, TABLE);
 
-        // Create output directory that has keyspace and table name in the path
-        File outputDir = new File(DEFAULT_OUTPUT_DIR + File.separator + KEYSPACE + File.separator + TABLE);
-        if (!outputDir.exists() && !outputDir.mkdirs())
-        {
-            throw new RuntimeException("Cannot create output directory: " + outputDir);
-        }
+	public static void main(String[] args) {
+		Config.setClientMode(true);
 
-        // Prepare SSTable writer
-        CQLSSTableWriter.Builder builder = CQLSSTableWriter.builder();
-        // set output directory
-        builder.inDirectory(outputDir)
-               // set target schema
-               .forTable(SCHEMA)
-               // set CQL statement to put data
-               .using(INSERT_STMT)
-               // set partitioner if needed
-               // default is Murmur3Partitioner so set if you use different one.
-               .withPartitioner(new Murmur3Partitioner());
-        CQLSSTableWriter writer = builder.build();
+		File outputDir = createOutputDirectory();
+
+		CQLSSTableWriter writer = CQLSSTableWriter.builder()
+				.inDirectory(outputDir)
+				.forTable(SCHEMA)
+				.using(INSERT_STMT)
+				.withPartitioner(new Murmur3Partitioner())
+				.build();
 
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(INPUT_FILE)));
 				CsvListReader csvReader = new CsvListReader(reader, CsvPreference.TAB_PREFERENCE)) {
+			
 			csvReader.getHeader(true);
 
-			// Write to SSTable while reading data
 			List<String> line;
 			while ((line = csvReader.read()) != null) {
-				// We use Java types here based on
-                    // http://www.datastax.com/drivers/java/2.0/com/datastax/driver/core/DataType.Name.html#asJavaClass%28%29
-                    writer.addRow(
-                    		line.get(11),
-                    		line.get(0),
-                    		line.get(2),
-                    		line.get(8),
-                    		getValue(line)
-                                  );
-                }
-            }
-            catch (InvalidRequestException | IOException e)
-            {
-                e.printStackTrace();
-            }
+				String month = line.get(11);
+				String state = line.get(0);
+				String city = line.get(2);
+				String receiver = line.get(8);
+				BigDecimal value = getValue(line);
+				
+				writer.addRow(month, state, city, receiver, value);
+			}
+			
+		} catch (InvalidRequestException | IOException e) {
+			e.printStackTrace();
+		}
 
-        try
-        {
-            writer.close();
-        }
-        catch (IOException ignore) {}
-    }
+		try {
+			writer.close();
+		} catch (IOException ignore) {
+		}
+	}
+
+	private static File createOutputDirectory() {
+		File outputDir = new File(DEFAULT_OUTPUT_DIR + File.separator + KEYSPACE + File.separator + TABLE);
+		if (!outputDir.exists() && !outputDir.mkdirs()) {
+			throw new RuntimeException("Cannot create output directory: " + outputDir);
+		}
+		return outputDir;
+	}
 
 	private static BigDecimal getValue(List<String> line) {
 		try {
 			return new BigDecimal(line.get(10));
-		} catch(Exception e) {
+		} catch (Exception e) {
 			return BigDecimal.ZERO;
 		}
 	}

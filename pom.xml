@@ -8,6 +8,7 @@
 	<properties>
 		<cassandra.version>2.1.6</cassandra.version>
 		<spark.version>1.4.0</spark.version>
+		<jackson.version>2.4.4</jackson.version>
 	</properties>
 
 	<dependencies>
@@ -53,7 +54,7 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-annotations</artifactId>
-			<version>2.4.4</version>
+			<version>${jackson.version}</version>
 		</dependency>
 	</dependencies>
 </project>
